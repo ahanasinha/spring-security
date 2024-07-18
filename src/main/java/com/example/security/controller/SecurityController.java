@@ -17,4 +17,9 @@ public class SecurityController {
     public Map<String, String> login(@RequestParam String username, @RequestParam String password) {
         return securityService.loginService(username, password);
     }
+
+    @GetMapping("/status")
+    public Map<String, String> status(@RequestParam String token) {
+        return securityService.getStatus(token);
+    }
 }

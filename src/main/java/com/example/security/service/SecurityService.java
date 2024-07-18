@@ -5,10 +5,10 @@ import com.example.security.repository.UserLoginRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
@@ -19,9 +19,8 @@ public class SecurityService {
     @Autowired
     private UserLoginRepository userRepository;
 
-    private static final long EXPIRATION_TIME = 900000; // 1.5 minute in milliseconds
-
-    private static final String SECRET_KEY = "securesecuresecuresecuresecuresecuresecuresecure";
+    private static final long EXPIRATION_TIME = 90000; // 1.5 minute in milliseconds
+    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor("securesecuresecuresecuresecuresecuresecuresecure".getBytes(StandardCharsets.UTF_8));
 
     public String generateJwtToken(String username, String password) {
         if (validateUser(username, password)) {
@@ -30,7 +29,7 @@ public class SecurityService {
                     .setSubject(username)
                     .setIssuedAt(Date.from(Instant.now()))
                     .setExpiration(Date.from(Instant.now().plusMillis(EXPIRATION_TIME)))
-                    .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
+                    .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
                     .compact();
         }
         return null;
@@ -55,6 +54,31 @@ public class SecurityService {
             response.put("token", token);
         } else {
             response.put("error", "Invalid username or password");
+        }
+        return response;
+    }
+
+    public Map<String, String> getStatus(String token) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            String username=Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+
+            Optional<UserLogin> userOptional = userRepository.findByUsername(username);
+
+            if (userOptional.isPresent()) {
+                UserLogin user = userOptional.get();
+                response.put("role", user.getRole());
+                response.put("App status","App is running successfully");
+            } else {
+                response.put("error", "User not found");
+            }
+        } catch (Exception e) {
+            response.put("error", "Token mismatch");
         }
         return response;
     }
