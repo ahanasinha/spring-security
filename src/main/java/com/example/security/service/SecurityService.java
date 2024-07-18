@@ -82,4 +82,33 @@ public class SecurityService {
         }
         return response;
     }
+
+    public Map<String, String> getAdminStatus(String token) {
+        Map<String, String> AdminResponse = new HashMap<>();
+        try {
+            String username=Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+
+            Optional<UserLogin> userOptional = userRepository.findByUsername(username);
+
+            if (userOptional.isPresent()) {
+                UserLogin user = userOptional.get();
+                if(user.getRole().equalsIgnoreCase("admin")){
+                    AdminResponse.put("role","Admin");
+                    AdminResponse.put("App status","App is running successfully");
+                }else{
+                    AdminResponse.put("role","Invalid User");
+                }
+            } else {
+                AdminResponse.put("error", "User not found");
+            }
+        } catch (Exception e) {
+            AdminResponse.put("error", "Token mismatch");
+        }
+        return AdminResponse;
+    }
 }

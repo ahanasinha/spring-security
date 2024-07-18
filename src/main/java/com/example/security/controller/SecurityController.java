@@ -22,4 +22,9 @@ public class SecurityController {
     public Map<String, String> status(@RequestParam String token) {
         return securityService.getStatus(token);
     }
+
+    @GetMapping("/status/admin")
+    public Map<String, String> adminStatus(@RequestParam String token) {
+        return securityService.getAdminStatus(token);
+    }
 }
